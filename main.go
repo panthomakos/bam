@@ -105,10 +105,12 @@ func main() {
 	}
 
 	shortest := matches[0]
+	jumps := strings.Count(shortest, "/")
 
 	for _, path := range matches {
-		if len(path) < len(shortest) {
+		if j := strings.Count(path, "/"); j < jumps {
 			shortest = path
+			jumps = j
 		}
 	}
 
