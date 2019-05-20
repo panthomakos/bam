@@ -2,11 +2,7 @@
 
 set -e
 
-version=$1
-if [[ -z "$version" ]]; then
-  echo "usage: $0 <version>"
-  exit 1
-fi
+version=$(cat VERSION)
 package='bam'
 
 platforms=("linux/amd64" "linux/386" "darwin/amd64")
