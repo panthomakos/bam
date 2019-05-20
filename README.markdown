@@ -11,7 +11,7 @@ You have personal projects, you have work projects. You have a lot of directorie
 
         # .zshrc or .bashrc
         function bam() {
-          local dest=$(${HOME}/bin/bam -root $HOME/Projects $1)
+          local dest=$(/usr/local/bin/bam -root $HOME/Projects $1)
           cd $dest
         }
 
