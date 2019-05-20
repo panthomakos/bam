@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
 	"path"
@@ -17,7 +18,13 @@ func quirkyGlob(dir string, index int) (m []string, e error) {
 	m = []string{}
 	e = nil
 
+	// Do not iterate through hidden directories.
+	if strings.HasPrefix(path.Base(dir), ".") {
+		return
+	}
+
 	fi, err := os.Stat(dir)
+	// Ignore the directory if we couldn't stat it.
 	if err != nil {
 		return
 	}
@@ -27,25 +34,19 @@ func quirkyGlob(dir string, index int) (m []string, e error) {
 		return
 	}
 
-	// Skip hidden directories.
-	if strings.HasPrefix(path.Base(dir), ".") {
-		return
+	// If the current directory matches the component, increment the
+	// component index and keep searching. Do not continue searching
+	// sub-directories for the same component index since they will
+	// all result in longer paths than this one, and we have already
+	// satisfied the search for this component.
+	if strings.HasPrefix(path.Base(dir), components[index]) {
+		index = index + 1
 	}
 
-	// If we have reached the end of the components, we have matched.
+	// If we hit the end of the component list, then we have a match
+	// and are done searching.
 	if index == len(components) {
 		return []string{dir}, nil
-	}
-
-	// If the current directory matches the component, increment the
-	// component and keep searching. Do not continue searching
-	// sub-directories since they will all be longer than this path.
-	if strings.HasPrefix(path.Base(dir), components[index]) {
-		matches, _ := quirkyGlob(dir, index+1)
-		if err != nil {
-			return m, err
-		}
-		return append(m, matches...), nil
 	}
 
 	directories, err := filepath.Glob(fmt.Sprint(dir, "/*"))
@@ -84,26 +85,38 @@ func quirkyGlob(dir string, index int) (m []string, e error) {
 }
 
 func main() {
-	root := filepath.Join(os.Getenv("HOME"), "Projects")
+	flag.Usage = func() {
+		fmt.Fprintf(os.Stderr, "Usage: %s [options] [SEARCH]\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "  SEARCH string\n")
+		fmt.Fprintf(os.Stderr, "         a fuzzy path to search for (example \"s/foo\")\n")
+		flag.PrintDefaults()
+	}
 
-	if len(os.Args) == 1 {
+	var root string
+	flag.StringVar(&root, "root", os.Getenv("HOME"), "root directory to search from")
+	flag.Parse()
+
+	if len(flag.Args()) == 0 {
 		fmt.Println(root)
 		return
 	}
 
-	arg := os.Args[1]
+	arg := flag.Args()[0]
 
+	// Split the search expression into components on the "/" character.
 	for _, c := range strings.Split(arg, "/") {
 		components = append(components, c)
 	}
 
 	matches, err := quirkyGlob(root, 0)
 
+	// If we didn't get any matches, or we got an error, just return root.
 	if err != nil || len(matches) == 0 {
 		fmt.Println(root)
 		return
 	}
 
+	// Find the shortest path that matches.
 	shortest := matches[0]
 	jumps := strings.Count(shortest, "/")
 
