@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/lithammer/fuzzysearch/fuzzy"
 	"os"
 	"path"
 	"path/filepath"
@@ -39,7 +40,7 @@ func quirkyGlob(dir string, index int) (m []string, e error) {
 	// sub-directories for the same component index since they will
 	// all result in longer paths than this one, and we have already
 	// satisfied the search for this component.
-	if strings.HasPrefix(path.Base(dir), components[index]) {
+	if fuzzy.Match(components[index], path.Base(dir)) {
 		index = index + 1
 	}
 
